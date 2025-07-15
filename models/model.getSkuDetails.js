@@ -53,17 +53,17 @@ async function updateIsActiveStatus(id, isActive) {
 
 /**
  * Get unique periods from sdp_period where is_active is true
- * @returns {Promise<Array>} Array of active periods
+ * @returns {Promise<Array>} Array of active periods with id
  */
 async function getActiveYears() {
   const query = `
-    SELECT period
+    SELECT id, period
     FROM public.sdp_period
     WHERE is_active = true
     ORDER BY id DESC;
   `;
   const result = await pool.query(query);
-  return result.rows.map(row => row.period);
+  return result.rows;
 }
 
 /**
