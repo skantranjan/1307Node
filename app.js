@@ -19,6 +19,7 @@ const toggleComponentStatusRoutes = require('./routes/toggleComponentStatus.rout
 const addComponentAuditLogRoutes = require('./routes/addComponentAuditLog.routes');
 const getComponentDetailsByYearAndCmRoutes = require('./routes/getComponentDetailsByYearAndCm.routes');
 const getSignoffDetailsByCmRoutes = require('./routes/getSignoffDetailsByCm.routes');
+const getSignoffDetailsByCmAndPeriodRoutes = require('./routes/getSignoffDetailsByCmAndPeriod.routes');
 
 
 // Register SKU routes
@@ -65,6 +66,9 @@ fastify.register(getComponentDetailsByYearAndCmRoutes);
 
 // Register Get Signoff Details by CM routes
 fastify.register(getSignoffDetailsByCmRoutes);
+
+// Register Get Signoff Details by CM and Period routes
+fastify.register(getSignoffDetailsByCmAndPeriodRoutes);
 
 // Add JWT middleware globally
 //fastify.addHook('preHandler', jwtMiddleware);
