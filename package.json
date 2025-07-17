@@ -1,11 +1,41 @@
 {
   "dependencies": {
+    "@azure/identity": "^4.10.2",
     "@azure/msal-node": "^3.6.0",
-    "@fastify/cors": "^11.0.1",
+    "@azure/storage-blob": "^12.27.0",
+    "@fastify/cors": "^8.0.0",
+    "@fastify/multipart": "^7.0.0",
     "dotenv": "^16.5.0",
-    "fastify": "^5.3.3",
+    "fastify": "^4.25.0",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.2.0",
     "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "app.js",
+      "routes/",
+      "controllers/",
+      "models/",
+      "middleware/",
+      "config/"
+    ],
+    "ext": "js,json",
+    "ignore": [
+      "node_modules/",
+      "*.test.js",
+      "*.spec.js"
+    ],
+    "env": {
+      "NODE_ENV": "development"
+    },
+    "delay": "1000"
   }
 }

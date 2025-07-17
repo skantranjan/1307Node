@@ -1,4 +1,5 @@
 const { insertComponentDetail } = require('../models/model.addComponent');
+const { insertMultipleEvidenceFiles } = require('../models/model.addEvidence');
 const { uploadFilesToBlob, createVirtualFolders } = require('../utils/azureBlobStorage');
 
 /**
@@ -102,12 +103,36 @@ async function addComponentController(request, reply) {
     // Insert component data into database
     const insertedComponent = await insertComponentDetail(componentData);
 
+    // Save evidence file records to sdp_evidence table
+    const evidenceFiles = [];
+    
+    // Collect all uploaded files for evidence table
+    Object.keys(uploadResults.uploadedFiles).forEach(category => {
+      uploadResults.uploadedFiles[category].forEach(uploadedFile => {
+        evidenceFiles.push({
+          component_id: insertedComponent.id,
+          evidence_file_name: uploadedFile.originalName,
+          evidence_file_url: uploadedFile.blobUrl,
+          created_by: componentData.created_by || componentData.user_id,
+          created_date: new Date()
+        });
+      });
+    });
+
+    // Insert evidence records if there are any files
+    let evidenceRecords = [];
+    if (evidenceFiles.length > 0) {
+      evidenceRecords = await insertMultipleEvidenceFiles(evidenceFiles);
+      console.log(`✅ Saved ${evidenceRecords.length} evidence records to database`);
+    }
+
     reply.code(201).send({
       success: true,
       message: 'Component detail added successfully with file uploads',
       data: {
         component: insertedComponent,
-        fileUploads: uploadResults
+        fileUploads: uploadResults,
+        evidenceRecords: evidenceRecords
       }
     });
 
