@@ -31,6 +31,8 @@ fastify.register(fastifyMultipart, {
   attachFieldsToBody: true
 });
 
+
+
 // Register SKU routes
 fastify.register(skuRoutes);
 
