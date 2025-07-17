@@ -1,0 +1,30 @@
+const { AzureCliCredential } = require("@azure/identity");
+const { BlobServiceClient } = require("@azure/storage-blob");
+
+const accountName = "ukssdptldev001";
+const containerName = "sdpdevstoragecontainer";
+const blobUrl = `https://${accountName}.blob.core.windows.net`;
+
+const credential = new AzureCliCredential();
+
+async function createVirtualFolders() {
+  const blobServiceClient = new BlobServiceClient(blobUrl, credential);
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+
+  const basePath = "year/cm/component/";
+  const categories = ["cate1", "cate2", "cate3", "cate4"];
+
+  for (const category of categories) {
+    const folderPath = `${basePath}${category}/placeholder.txt`; // Simulate folder with a dummy file
+    const blockBlobClient = containerClient.getBlockBlobClient(folderPath);
+
+    const content = "This is a placeholder to simulate a folder.";
+    await blockBlobClient.upload(content, content.length);
+
+    console.log(`📁 Created virtual folder: ${basePath}${category}/`);
+  }
+}
+
+createVirtualFolders().catch((err) => {
+  console.error("❌ Error creating virtual folders:", err.message);
+});
