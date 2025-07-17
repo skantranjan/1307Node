@@ -1,12 +1,13 @@
 // Load environment variables
 require('dotenv').config();
-const fastify = require('fastify')({ logger: false });
+const fastify = require('fastify')({ logger: true });
 const skuRoutes = require('./routes/sku.routes');
 const cmRoutes = require('./routes/cm.routes');
 const skuDetailsRoutes = require('./routes/skuDetails.routes');
 const jwtMiddleware = require('./middleware/middleware.jwt');
 const pool = require('./config/db.config');
 const fastifyCors = require('@fastify/cors');
+const fastifyMultipart = require('@fastify/multipart');
 const skuAuditLogRoutes = require('./routes/skuAuditLog.routes');
 const materialTypeMasterRoutes = require('./routes/materialTypeMaster.routes');
 const masterComponentUmoRoutes = require('./routes/masterComponentUmo.routes');
@@ -21,6 +22,14 @@ const getComponentDetailsByYearAndCmRoutes = require('./routes/getComponentDetai
 const getSignoffDetailsByCmRoutes = require('./routes/getSignoffDetailsByCm.routes');
 const getSignoffDetailsByCmAndPeriodRoutes = require('./routes/getSignoffDetailsByCmAndPeriod.routes');
 
+// Register multipart plugin for file uploads (MUST be registered before routes)
+fastify.register(fastifyMultipart, {
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+    files: 20 // Maximum 20 files
+  },
+  attachFieldsToBody: true
+});
 
 // Register SKU routes
 fastify.register(skuRoutes);
@@ -95,7 +104,7 @@ const start = async () => {
   try {
     // Test database connection on startup
     await pool.query('SELECT NOW()');
-   // fastify.log.info('Database connected successfully');
+    fastify.log.info('Database connected successfully');
     
     fastify.register(fastifyCors, {
       origin: ['http://localhost:5000'],
@@ -103,7 +112,7 @@ const start = async () => {
     });
     
     await fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' });
-   // fastify.log.info(`Server running on port ${process.env.PORT || 3000}`);
+    fastify.log.info(`Server running on port ${process.env.PORT || 3000}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
