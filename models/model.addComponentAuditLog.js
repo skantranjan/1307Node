@@ -6,11 +6,11 @@ const pool = require('../config/db.config');
 async function insertComponentAuditLog(data) {
   const query = `
     INSERT INTO sdp_component_details_auditlog (
-      sku_code, component_id, sku_reference, formulation_reference, material_type_id, 
+      component_id, sku_code, formulation_reference, material_type_id, 
       components_reference, component_code, component_description, component_valid_from, 
       component_valid_to, component_material_group, component_quantity, component_uom_id, 
       component_base_quantity, component_base_uom_id, percent_w_w, evidence, 
-      component_packaging_type_id, component_packaging_material_id, helper_column, 
+      component_packaging_type_id, component_packaging_material, helper_column, 
       component_unit_weight, weight_unit_measure_id, percent_mechanical_pcr_content, 
       percent_mechanical_pir_content, percent_chemical_recycled_content, percent_bio_sourced, 
       material_structure_multimaterials, component_packaging_color_opacity, 
@@ -18,18 +18,17 @@ async function insertComponentAuditLog(data) {
       evidence_of_recycled_or_bio_source, last_update_date, category_entry_id, 
       data_verification_entry_id, user_id, signed_off_by, signed_off_date, 
       mandatory_fields_completion_status, evidence_provided, document_status, is_active, 
-      created_by, created_date
+      created_by, created_date, year, component_unit_weight_id, cm_code, periods
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
       $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39,
-      $40, $41, $42, $43, $44, $45
+      $40, $41, $42, $43, $44, $45, $46, $47
     ) RETURNING *
   `;
 
   const values = [
-    data.sku_code || null,
     data.component_id || null,
-    data.sku_reference || null,
+    data.sku_code || null,
     data.formulation_reference || null,
     data.material_type_id || null,
     data.components_reference || null,
@@ -45,7 +44,7 @@ async function insertComponentAuditLog(data) {
     data.percent_w_w || null,
     data.evidence || null,
     data.component_packaging_type_id || null,
-    data.component_packaging_material_id || null,
+    data.component_packaging_material || null,
     data.helper_column || null,
     data.component_unit_weight || null,
     data.weight_unit_measure_id || null,
@@ -70,7 +69,11 @@ async function insertComponentAuditLog(data) {
     data.document_status || null,
     data.is_active !== undefined ? data.is_active : true,
     data.created_by || null,
-    data.created_date || new Date()
+    data.created_date || new Date(),
+    data.year || null,
+    data.component_unit_weight_id || null,
+    data.cm_code || null,
+    data.periods || null
   ];
 
   const result = await pool.query(query, values);

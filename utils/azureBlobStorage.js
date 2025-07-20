@@ -1,11 +1,34 @@
-const { AzureCliCredential } = require("@azure/identity");
+const { AzureCliCredential, DefaultAzureCredential } = require("@azure/identity");
 const { BlobServiceClient } = require("@azure/storage-blob");
 
-const accountName = "ukssdptldev001";
-const containerName = "sdpdevstoragecontainer";
+// Production configuration
+const accountName = process.env.AZURE_STORAGE_ACCOUNT || "ukssdptldev001";
+const containerName = process.env.AZURE_CONTAINER_NAME || "sdpdevstoragecontainer";
 const blobUrl = `https://${accountName}.blob.core.windows.net`;
 
-const credential = new AzureCliCredential();
+// Choose authentication method based on environment
+let credential;
+if (process.env.NODE_ENV === 'production') {
+  if (process.env.AZURE_USE_MANAGED_IDENTITY === 'true') {
+    // Use Managed Identity (recommended for Azure App Service)
+    credential = new DefaultAzureCredential();
+  } else if (process.env.AZURE_STORAGE_CONNECTION_STRING) {
+    // Use connection string
+    credential = null; // Will use connection string directly
+  } else {
+    // Fallback to Azure CLI (for local development)
+    credential = new AzureCliCredential();
+  }
+} else {
+  // Development environment - EIP Dev
+  if (process.env.AZURE_USE_CONNECTION_STRING === 'true' && process.env.AZURE_STORAGE_CONNECTION_STRING) {
+    // Use connection string for EIP Dev
+    credential = null; // Will use connection string directly
+  } else {
+    // Fallback to Azure CLI (for local development)
+    credential = new AzureCliCredential();
+  }
+}
 
 /**
  * Upload files to Azure Blob Storage with the specified folder structure
@@ -22,9 +45,18 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
     console.log(`📂 Container: ${containerName}`);
     console.log(`📂 Account: ${accountName}`);
     console.log(`📂 Blob URL: ${blobUrl}`);
-    console.log(`🔑 Using Azure CLI credentials`);
+    console.log(`🔑 Environment: ${process.env.NODE_ENV || 'development'}`);
     
-    const blobServiceClient = new BlobServiceClient(blobUrl, credential);
+    let blobServiceClient;
+    if (process.env.NODE_ENV === 'production' && process.env.AZURE_STORAGE_CONNECTION_STRING) {
+      // Use connection string for production
+      console.log(`🔑 Using Azure Storage Connection String`);
+      blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    } else {
+      // Use credential-based authentication
+      console.log(`🔑 Using Azure Credentials`);
+      blobServiceClient = new BlobServiceClient(blobUrl, credential);
+    }
     const containerClient = blobServiceClient.getContainerClient(containerName);
     
     const uploadResults = {
@@ -162,7 +194,14 @@ async function createVirtualFolders(year, cmCode, skuCode, componentCode) {
     console.log(`📂 SKU Code: ${skuCode}`);
     console.log(`📂 Component Code: ${componentCode}`);
     
-    const blobServiceClient = new BlobServiceClient(blobUrl, credential);
+    let blobServiceClient;
+    if (process.env.NODE_ENV === 'production' && process.env.AZURE_STORAGE_CONNECTION_STRING) {
+      // Use connection string for production
+      blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    } else {
+      // Use credential-based authentication
+      blobServiceClient = new BlobServiceClient(blobUrl, credential);
+    }
     const containerClient = blobServiceClient.getContainerClient(containerName);
     
     // Use the specific category names

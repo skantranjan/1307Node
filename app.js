@@ -18,6 +18,7 @@ const componentMasterMaterialTypeRoutes = require('./routes/componentMasterMater
 const getComponentDetailsBySkuRoutes = require('./routes/getComponentDetailsBySku.routes');
 const toggleComponentStatusRoutes = require('./routes/toggleComponentStatus.routes');
 const addComponentAuditLogRoutes = require('./routes/addComponentAuditLog.routes');
+const getComponentAuditLogByComponentIdRoutes = require('./routes/getComponentAuditLogByComponentId.routes');
 const getComponentDetailsByYearAndCmRoutes = require('./routes/getComponentDetailsByYearAndCm.routes');
 const getSignoffDetailsByCmRoutes = require('./routes/getSignoffDetailsByCm.routes');
 const getSignoffDetailsByCmAndPeriodRoutes = require('./routes/getSignoffDetailsByCmAndPeriod.routes');
@@ -72,6 +73,9 @@ fastify.register(toggleComponentStatusRoutes);
 // Register Add Component Audit Log routes
 fastify.register(addComponentAuditLogRoutes);
 
+// Register Get Component Audit Log by Component ID routes
+fastify.register(getComponentAuditLogByComponentIdRoutes);
+
 // Register Get Component Details by Year and CM routes
 fastify.register(getComponentDetailsByYearAndCmRoutes);
 
@@ -83,6 +87,39 @@ fastify.register(getSignoffDetailsByCmAndPeriodRoutes);
 
 // Add JWT middleware globally
 //fastify.addHook('preHandler', jwtMiddleware);
+
+// Health check endpoint for EIP deployment
+fastify.get('/health', async (request, reply) => {
+  try {
+    // Test database connection
+    const dbResult = await pool.query('SELECT NOW()');
+    
+    return {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: {
+        status: 'connected',
+        timestamp: dbResult.rows[0].now
+      },
+      azure: {
+        account: process.env.AZURE_STORAGE_ACCOUNT || 'not-configured',
+        container: process.env.AZURE_CONTAINER_NAME || 'not-configured'
+      },
+      server: {
+        port: process.env.PORT || 3000,
+        host: process.env.HOST || '0.0.0.0'
+      }
+    };
+  } catch (error) {
+    fastify.log.error('Health check failed:', error);
+    return reply.code(503).send({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
 
 // Test database connection
 fastify.get('/db-test', async (request, reply) => {
