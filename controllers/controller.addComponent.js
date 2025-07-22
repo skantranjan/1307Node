@@ -168,6 +168,7 @@ async function addComponentController(request, reply) {
       const periodData = await getPeriodById(componentData.year);
       if (periodData) {
         yearName = periodData.period;
+        componentData.periods = componentData.year; // Use the same year ID value
         console.log(`✅ Found year name: ${yearName} for year ID: ${componentData.year}`);
       } else {
         console.log(`⚠️ No period found for year ID: ${componentData.year}`);
@@ -285,7 +286,7 @@ async function addComponentController(request, reply) {
     }
 
     console.log('\n✅ === API RESPONSE ===');
-    reply.code(201).send({
+    const responseData = {
       success: true,
       message: 'Component detail added successfully with file uploads',
       data: {
@@ -294,7 +295,8 @@ async function addComponentController(request, reply) {
         evidenceRecords: evidenceRecords,
         yearInfo: {
           yearId: componentData.year,
-          yearName: yearName
+          yearName: yearName,
+          periods: componentData.year
         },
         categories: {
           'Weight': files['Weight'].length,
@@ -303,7 +305,14 @@ async function addComponentController(request, reply) {
           'Material Type': files['Material Type'].length
         }
       }
-    });
+    };
+    
+    console.log('📤 === RESPONSE SENT TO UI ===');
+    console.log('Status Code: 201');
+    console.log('Response Body:');
+    console.log(JSON.stringify(responseData, null, 2));
+    
+    reply.code(201).send(responseData);
 
   } catch (error) {
     request.log.error(error);

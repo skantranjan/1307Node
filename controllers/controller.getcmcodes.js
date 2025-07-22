@@ -1,4 +1,4 @@
-const { getAllCMCodes, getCMCodeByCode } = require('../models/model.getcmcodes');
+const { getAllCMCodes, getCMCodeByCode } = require('../models/model.getCMCodes');
 
 async function getAllCMCodesController(request, reply) {
   try {

@@ -16,11 +16,11 @@ async function insertComponentDetail(data) {
       component_packaging_level_id, component_dimensions, packaging_specification_evidence, 
       evidence_of_recycled_or_bio_source, last_update_date, category_entry_id, data_verification_entry_id, 
       user_id, signed_off_by, signed_off_date, mandatory_fields_completion_status, evidence_provided, 
-      document_status, is_active, created_by, created_date, year, component_unit_weight_id, cm_code
+      document_status, is_active, created_by, created_date, year, component_unit_weight_id, cm_code, periods
     ) VALUES (
       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
       $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39,
-      $40, $41, $42, $43, $44, $45
+      $40, $41, $42, $43, $44, $45, $46
     ) RETURNING *
   `;
 
@@ -69,7 +69,8 @@ async function insertComponentDetail(data) {
     data.created_date || new Date(),
     data.year || null,
     data.component_unit_weight_id || null,
-    data.cm_code || null
+    data.cm_code || null,
+    data.periods || null
   ];
 
   const result = await pool.query(query, values);
