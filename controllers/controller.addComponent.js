@@ -39,7 +39,7 @@ async function addComponentController(request, reply) {
           else if (categoryKey === 'category2') category = 'weightUOM';
           else if (categoryKey === 'category3') category = 'Packaging Type';
           else if (categoryKey === 'category4') category = 'Material Type';
-          else if (categoryKey === 'packaging_evidence') category = 'PackagingEvidence';
+          else if (categoryKey === 'packaging_evidence' || categoryKey === 'PackagingEvidence') category = 'PackagingEvidence';
           
           console.log(`📁 File field detected: ${key} -> mapped to ${category}`);
           
@@ -144,6 +144,86 @@ async function addComponentController(request, reply) {
           }
         }
       });
+    }
+
+    // Handle PackagingEvidence files from separate object structure
+    if (request.body.Packagingfile && request.body.Packagingfile.files) {
+      console.log('\n📦 === PROCESSING PACKAGING EVIDENCE FILES ===');
+      console.log('PackagingEvidence files found:', request.body.Packagingfile.files.length);
+      
+      const packagingFiles = request.body.Packagingfile.files;
+      
+      if (Array.isArray(packagingFiles)) {
+        packagingFiles.forEach((file, index) => {
+          console.log(`📦 Processing PackagingEvidence file ${index + 1}: ${file.filename}`);
+          console.log(`   - MimeType: ${file.mimetype}`);
+          console.log(`   - Has _buf: ${file._buf ? 'YES' : 'NO'}`);
+          console.log(`   - _buf size: ${file._buf ? file._buf.length : 'N/A'} bytes`);
+          
+          // Properly extract file buffer
+          let fileBuffer = null;
+          if (file._buf) {
+            fileBuffer = file._buf;
+            console.log(`   ✅ Using _buf (${fileBuffer.length} bytes)`);
+          } else if (file.data) {
+            fileBuffer = file.data;
+            console.log(`   ✅ Using data (${fileBuffer.length} bytes)`);
+          } else if (file.buffer) {
+            fileBuffer = file.buffer;
+            console.log(`   ✅ Using buffer (${fileBuffer.length} bytes)`);
+          } else if (file.toBuffer && typeof file.toBuffer === 'function') {
+            fileBuffer = file.toBuffer();
+            console.log(`   ✅ Using toBuffer() (${fileBuffer.length} bytes)`);
+          }
+          
+          if (fileBuffer && Buffer.isBuffer(fileBuffer)) {
+            files['PackagingEvidence'].push({
+              filename: file.filename,
+              mimetype: file.mimetype,
+              data: fileBuffer
+            });
+            console.log(`   ✅ Added PackagingEvidence file: ${file.filename} (${fileBuffer.length} bytes)`);
+          } else {
+            console.log(`   ❌ Invalid file data for ${file.filename} in PackagingEvidence`);
+            console.log(`     - Buffer type: ${typeof fileBuffer}`);
+            console.log(`     - Is Buffer: ${Buffer.isBuffer(fileBuffer)}`);
+          }
+        });
+      } else if (packagingFiles.filename) {
+        // Handle single file
+        console.log(`📦 Processing single PackagingEvidence file: ${packagingFiles.filename}`);
+        console.log(`   - MimeType: ${packagingFiles.mimetype}`);
+        console.log(`   - Has _buf: ${packagingFiles._buf ? 'YES' : 'NO'}`);
+        console.log(`   - _buf size: ${packagingFiles._buf ? packagingFiles._buf.length : 'N/A'} bytes`);
+        
+        let fileBuffer = null;
+        if (packagingFiles._buf) {
+          fileBuffer = packagingFiles._buf;
+          console.log(`   ✅ Using _buf (${fileBuffer.length} bytes)`);
+        } else if (packagingFiles.data) {
+          fileBuffer = packagingFiles.data;
+          console.log(`   ✅ Using data (${fileBuffer.length} bytes)`);
+        } else if (packagingFiles.buffer) {
+          fileBuffer = packagingFiles.buffer;
+          console.log(`   ✅ Using buffer (${fileBuffer.length} bytes)`);
+        } else if (packagingFiles.toBuffer && typeof packagingFiles.toBuffer === 'function') {
+          fileBuffer = packagingFiles.toBuffer();
+          console.log(`   ✅ Using toBuffer() (${fileBuffer.length} bytes)`);
+        }
+        
+        if (fileBuffer && Buffer.isBuffer(fileBuffer)) {
+          files['PackagingEvidence'].push({
+            filename: packagingFiles.filename,
+            mimetype: packagingFiles.mimetype,
+            data: fileBuffer
+          });
+          console.log(`   ✅ Added PackagingEvidence file: ${packagingFiles.filename} (${fileBuffer.length} bytes)`);
+        } else {
+          console.log(`   ❌ Invalid file data for ${packagingFiles.filename} in PackagingEvidence`);
+          console.log(`     - Buffer type: ${typeof fileBuffer}`);
+          console.log(`     - Is Buffer: ${Buffer.isBuffer(fileBuffer)}`);
+        }
+      }
     }
 
     console.log('\n📊 === FINAL PROCESSED DATA ===');
