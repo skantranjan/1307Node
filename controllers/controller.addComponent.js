@@ -1,7 +1,7 @@
 const { insertComponentDetail } = require('../models/model.addComponent');
 const { insertMultipleEvidenceFiles } = require('../models/model.addEvidence');
 const { getPeriodById } = require('../models/model.getPeriods');
-const { uploadFilesToBlob, createVirtualFolders } = require('../utils/azureBlobStorage');
+const { uploadFilesToBlob } = require('../utils/azureBlobStorage');
 
 /**
  * Controller to add a new component detail with file uploads
@@ -17,7 +17,8 @@ async function addComponentController(request, reply) {
       'Weight': [],
       'weightUOM': [],
       'Packaging Type': [],
-      'Material Type': []
+      'Material Type': [],
+      'PackagingEvidence': []
     };
 
     // Since we have attachFieldsToBody: true, data is in request.body
@@ -38,6 +39,7 @@ async function addComponentController(request, reply) {
           else if (categoryKey === 'category2') category = 'weightUOM';
           else if (categoryKey === 'category3') category = 'Packaging Type';
           else if (categoryKey === 'category4') category = 'Material Type';
+          else if (categoryKey === 'packaging_evidence') category = 'PackagingEvidence';
           
           console.log(`📁 File field detected: ${key} -> mapped to ${category}`);
           
@@ -198,7 +200,7 @@ async function addComponentController(request, reply) {
     console.log(`📂 Component Code: ${componentData.component_code}`);
     
     // Show folder structure that will be created
-    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type"];
+    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type", "PackagingEvidence"];
     console.log('\n📁 === FOLDER STRUCTURE TO BE CREATED ===');
     categories.forEach(category => {
       const folderPath = `${yearName || componentData.year}/${componentData.cm_code}/${componentData.sku_code}/${componentData.component_code}/${category}/`;
@@ -215,14 +217,7 @@ async function addComponentController(request, reply) {
       componentData.component_code
     );
 
-    // Create virtual folders even if no files
-    console.log('\n📁 === CREATING VIRTUAL FOLDERS ===');
-    await createVirtualFolders(
-      yearName || componentData.year, // Use year name if available, otherwise use year ID
-      componentData.cm_code,
-      componentData.sku_code,
-      componentData.component_code
-    );
+    // Virtual folder creation removed - not needed when uploading actual files
 
     // Insert component data into database
     console.log('\n💾 === SAVING COMPONENT TO DATABASE ===');
@@ -245,6 +240,7 @@ async function addComponentController(request, reply) {
           component_id: insertedComponent.id,
           evidence_file_name: uploadedFile.originalName,
           evidence_file_url: uploadedFile.blobUrl,
+          category: category, // Save the category name
           created_by: componentData.created_by || componentData.user_id,
           created_date: new Date()
         });
@@ -261,6 +257,7 @@ async function addComponentController(request, reply) {
             component_id: insertedComponent.id,
             evidence_file_name: file.filename,
             evidence_file_url: `pending-azure-upload/${file.filename}`, // Placeholder URL
+            category: category, // Save the category name
             created_by: componentData.created_by || componentData.user_id,
             created_date: new Date()
           });
@@ -302,7 +299,8 @@ async function addComponentController(request, reply) {
           'Weight': files['Weight'].length,
           'weightUOM': files['weightUOM'].length,
           'Packaging Type': files['Packaging Type'].length,
-          'Material Type': files['Material Type'].length
+          'Material Type': files['Material Type'].length,
+          'PackagingEvidence': files['PackagingEvidence'].length
         }
       }
     };

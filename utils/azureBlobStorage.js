@@ -57,6 +57,14 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
       console.log(`🔑 Using Azure Credentials`);
       blobServiceClient = new BlobServiceClient(blobUrl, credential);
     }
+    // Use different containers based on category
+    const getContainerName = (category) => {
+      if (category === 'PackagingEvidence') {
+        return 'packaging'; // Use packaging container for PackagingEvidence files
+      }
+      return containerName; // Use default container for other categories
+    };
+    
     const containerClient = blobServiceClient.getContainerClient(containerName);
     
     const uploadResults = {
@@ -66,7 +74,7 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
     };
 
     // Use the specific category names
-    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type"];
+    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type", "PackagingEvidence"];
     
     console.log('\n📁 === PROCESSING FILES BY CATEGORY ===');
     for (const category of categories) {
@@ -87,8 +95,13 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
           const folderPath = `${year}/${cmCode}/${skuCode}/${componentCode}/${category}/`;
           const blobPath = `${folderPath}${uniqueFileName}`;
           
+          // Get appropriate container for this category
+          const categoryContainerName = getContainerName(category);
+          const categoryContainerClient = blobServiceClient.getContainerClient(categoryContainerName);
+          
           console.log(`📁 Creating folder structure: ${folderPath}`);
           console.log(`📄 Uploading file: ${blobPath}`);
+          console.log(`📦 Container: ${categoryContainerName}`);
           console.log(`📊 File info: ${fileName}, size: ${file.data ? file.data.length : 'unknown'} bytes`);
           
           // Enhanced safety check for file data
@@ -126,7 +139,7 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
           
           try {
             console.log(`🔧 Creating block blob client for: ${blobPath}`);
-            const blockBlobClient = containerClient.getBlockBlobClient(blobPath);
+            const blockBlobClient = categoryContainerClient.getBlockBlobClient(blobPath);
             
             console.log(`🚀 Starting upload for ${fileName} (${file.data.length} bytes)`);
             console.log(`📄 MimeType: ${file.mimetype || 'application/octet-stream'}`);
@@ -205,18 +218,22 @@ async function createVirtualFolders(year, cmCode, skuCode, componentCode) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     
     // Use the specific category names
-    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type"];
+    const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type", "PackagingEvidence"];
     
     console.log('\n📁 === CREATING FOLDER STRUCTURE ===');
     for (const category of categories) {
       const folderPath = `${year}/${cmCode}/${skuCode}/${componentCode}/${category}/.keep`;
       console.log(`📁 Creating folder: ${folderPath}`);
       
-      const blockBlobClient = containerClient.getBlockBlobClient(folderPath);
+      // Get appropriate container for this category
+      const categoryContainerName = category === 'PackagingEvidence' ? 'packaging' : containerName;
+      const categoryContainerClient = blobServiceClient.getContainerClient(categoryContainerName);
+      
+      const blockBlobClient = categoryContainerClient.getBlockBlobClient(folderPath);
       
       const content = "Folder placeholder";
       await blockBlobClient.upload(content, content.length);
-      console.log(`✅ Created virtual folder: ${folderPath}`);
+      console.log(`✅ Created virtual folder: ${folderPath} in container: ${categoryContainerName}`);
     }
     
     console.log('✅ All virtual folders created successfully');

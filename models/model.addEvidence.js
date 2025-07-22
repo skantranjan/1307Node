@@ -7,8 +7,8 @@ async function insertEvidenceFile(data) {
   const query = `
     INSERT INTO sdp_evidence (
       component_id, evidence_file_name, evidence_file_url, 
-      created_by, created_date
-    ) VALUES ($1, $2, $3, $4, $5) RETURNING *
+      created_by, created_date, category
+    ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
   `;
 
   const values = [
@@ -16,7 +16,8 @@ async function insertEvidenceFile(data) {
     data.evidence_file_name,
     data.evidence_file_url,
     data.created_by,
-    data.created_date || new Date()
+    data.created_date || new Date(),
+    data.category || null
   ];
 
   const result = await pool.query(query, values);
@@ -30,8 +31,8 @@ async function insertMultipleEvidenceFiles(evidenceFiles) {
   const query = `
     INSERT INTO sdp_evidence (
       component_id, evidence_file_name, evidence_file_url, 
-      created_by, created_date
-    ) VALUES ($1, $2, $3, $4, $5) RETURNING *
+      created_by, created_date, category
+    ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
   `;
 
   const results = [];
@@ -42,7 +43,8 @@ async function insertMultipleEvidenceFiles(evidenceFiles) {
       evidenceFile.evidence_file_name,
       evidenceFile.evidence_file_url,
       evidenceFile.created_by,
-      evidenceFile.created_date || new Date()
+      evidenceFile.created_date || new Date(),
+      evidenceFile.category || null
     ];
 
     const result = await pool.query(query, values);
