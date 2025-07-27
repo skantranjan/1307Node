@@ -11,6 +11,7 @@ async function addComponentController(request, reply) {
     console.log('🔍 ===== ADD COMPONENT API - DATA RECEIVED =====');
     console.log('Content-Type:', request.headers['content-type']);
     console.log('Request body keys:', Object.keys(request.body || {}));
+    console.log('Full request body:', JSON.stringify(request.body, null, 2));
     
     const componentData = {};
     const files = {
@@ -147,6 +148,16 @@ async function addComponentController(request, reply) {
     }
 
     // Handle PackagingEvidence files from separate object structure
+    console.log('\n🔍 === PACKAGING EVIDENCE REQUEST BODY CHECK ===');
+    console.log('Request body keys:', Object.keys(request.body));
+    console.log('Packagingfile exists:', !!request.body.Packagingfile);
+    if (request.body.Packagingfile) {
+      console.log('Packagingfile keys:', Object.keys(request.body.Packagingfile));
+      console.log('Packagingfile.files exists:', !!request.body.Packagingfile.files);
+      console.log('Packagingfile.files type:', typeof request.body.Packagingfile.files);
+      console.log('Packagingfile.files length:', request.body.Packagingfile.files ? request.body.Packagingfile.files.length : 'N/A');
+    }
+    
     if (request.body.Packagingfile && request.body.Packagingfile.files) {
       console.log('\n📦 === PROCESSING PACKAGING EVIDENCE FILES ===');
       console.log('PackagingEvidence files found:', request.body.Packagingfile.files.length);
@@ -231,10 +242,24 @@ async function addComponentController(request, reply) {
     console.log('Files by Category:');
     Object.keys(files).forEach(cat => {
       console.log(`  ${cat}: ${files[cat].length} files`);
-      files[cat].forEach(file => {
-        console.log(`    - ${file.filename} (${file.mimetype}) - ${file.data.length} bytes`);
-      });
+      if (files[cat].length > 0) {
+        files[cat].forEach(file => {
+          console.log(`    - ${file.filename} (${file.mimetype}) - ${file.data.length} bytes`);
+        });
+      }
     });
+    
+    // Special check for PackagingEvidence
+    console.log('\n🔍 === PACKAGING EVIDENCE CHECK ===');
+    console.log('PackagingEvidence files count:', files['PackagingEvidence'] ? files['PackagingEvidence'].length : 0);
+    if (files['PackagingEvidence'] && files['PackagingEvidence'].length > 0) {
+      console.log('PackagingEvidence file details:');
+      files['PackagingEvidence'].forEach((file, index) => {
+        console.log(`  File ${index + 1}: ${file.filename} (${file.mimetype}) - ${file.data.length} bytes`);
+      });
+    } else {
+      console.log('❌ No PackagingEvidence files found in files object');
+    }
 
     // Validate required fields
     if (!componentData.cm_code || !componentData.year || !componentData.sku_code || !componentData.component_code) {

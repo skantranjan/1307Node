@@ -24,6 +24,7 @@ const getSignoffDetailsByCmRoutes = require('./routes/getSignoffDetailsByCm.rout
 const getSignoffDetailsByCmAndPeriodRoutes = require('./routes/getSignoffDetailsByCmAndPeriod.routes');
 const getComponentDetailsByPeriodAndCmRoutes = require('./routes/getComponentDetailsByPeriodAndCm.routes');
 const getComponentCodeDataRoutes = require('./routes/getComponentCodeData.routes');
+const regionMasterRoutes = require('./routes/regionMaster.routes');
 
 // Register multipart plugin for file uploads (MUST be registered before routes)
 fastify.register(fastifyMultipart, {
@@ -92,6 +93,9 @@ fastify.register(getComponentDetailsByPeriodAndCmRoutes);
 
 // Register Get Component Code Data routes
 fastify.register(getComponentCodeDataRoutes);
+
+// Register Region Master routes
+fastify.register(regionMasterRoutes);
 
 // Add JWT middleware globally
 //fastify.addHook('preHandler', jwtMiddleware);
