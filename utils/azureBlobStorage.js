@@ -59,9 +59,15 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
     }
     // Use different containers based on category
     const getContainerName = (category) => {
+      console.log(`🔍 === CONTAINER SELECTION ===`);
+      console.log(`📂 Category: ${category}`);
+      console.log(`📦 Default container: ${containerName}`);
+      
       if (category === 'PackagingEvidence') {
+        console.log(`✅ Using 'packaging' container for PackagingEvidence`);
         return 'packaging'; // Use packaging container for PackagingEvidence files
       }
+      console.log(`✅ Using default container: ${containerName}`);
       return containerName; // Use default container for other categories
     };
     
@@ -77,9 +83,15 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
     const categories = ["Weight", "weightUOM", "Packaging Type", "Material Type", "PackagingEvidence"];
     
     console.log('\n📁 === PROCESSING FILES BY CATEGORY ===');
+    console.log('📋 All categories to process:', categories);
+    console.log('📋 Files object keys:', Object.keys(files));
+    
     for (const category of categories) {
       console.log(`\n📂 Processing category: ${category}`);
       console.log(`📊 Files in ${category}: ${files[category] ? files[category].length : 0}`);
+      if (files[category] && files[category].length > 0) {
+        console.log(`📄 File names in ${category}:`, files[category].map(f => f.filename));
+      }
       
       if (files[category] && files[category].length > 0) {
         uploadResults.uploadedFiles[category] = [];
@@ -183,12 +195,32 @@ async function uploadFilesToBlob(files, year, cmCode, skuCode, componentCode) {
     return uploadResults;
   } catch (error) {
     console.error("❌ Azure Blob Storage error:", error);
-    return {
+    
+    // If Azure upload fails, still return the files for database storage
+    const fallbackResults = {
       success: false,
       error: error.message,
       uploadedFiles: {},
       errors: []
     };
+    
+    // Add files to uploadedFiles with placeholder URLs for database storage
+    for (const category of categories) {
+      if (files[category] && files[category].length > 0) {
+        fallbackResults.uploadedFiles[category] = [];
+        files[category].forEach(file => {
+          fallbackResults.uploadedFiles[category].push({
+            originalName: file.filename,
+            blobName: file.filename,
+            blobUrl: `pending-azure-upload/${file.filename}`,
+            size: file.data.length,
+            mimetype: file.mimetype
+          });
+        });
+      }
+    }
+    
+    return fallbackResults;
   }
 }
 
