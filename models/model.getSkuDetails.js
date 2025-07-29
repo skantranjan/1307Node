@@ -88,16 +88,15 @@ async function getAllSkuDescriptions() {
 async function insertSkuDetail(data) {
   const query = `
     INSERT INTO public.sdp_skudetails (
-      sku_code, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    RETURNING id, sku_code, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku;
+      sku_code, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku, site
+    ) VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    RETURNING id, sku_code, sku_description, cm_code, cm_description, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku, site;
   `;
   const values = [
     data.sku_code,
     data.sku_description,
     data.cm_code || null,
     data.cm_description || null,
-    data.sku_reference || null,
     typeof data.is_active === 'boolean' ? data.is_active : true,
     data.created_by || null,
     data.created_date || new Date(),
@@ -105,7 +104,8 @@ async function insertSkuDetail(data) {
     data.purchased_quantity || null,
     data.sku_reference_check || null,
     data.formulation_reference || null,
-    data.dual_source_sku || null
+    data.dual_source_sku || null,
+    data.site || null
   ];
   const result = await pool.query(query, values);
   return result.rows[0];

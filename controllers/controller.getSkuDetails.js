@@ -1,4 +1,5 @@
 const { getSkuDetailsByCMCode, getAllSkuDetails, updateIsActiveStatus, getActiveYears, getAllSkuDescriptions, insertSkuDetail, updateSkuDetailBySkuCode } = require('../models/model.getSkuDetails');
+const { getComponentDetailsByCode, insertComponentDetail, updateComponentSkuCode } = require('../models/model.componentOperations');
 
 /**
  * Controller to get SKU details filtered by CM code
@@ -95,53 +96,87 @@ async function getAllSkuDescriptionsController(request, reply) {
 }
 
 /**
- * Controller to insert a new SKU detail
+ * Controller to insert a new SKU detail with optional component data
  */
 async function insertSkuDetailController(request, reply) {
   try {
     const {
-      sku_code,
-      sku_description,
-      cm_code,
-      cm_description,
-      sku_reference,
-      is_active,
-      created_by,
-      created_date,
-      period,
-      purchased_quantity,
-      sku_reference_check,
-      formulation_reference,
-      dual_source_sku
+      sku_data,
+      components // Array of component objects
     } = request.body;
 
-    // Manual validation for custom error messages
-    if (!sku_code || sku_code.trim() === '') {
+    // Validate required sku_data
+    if (!sku_data) {
+      return reply.code(400).send({ 
+        success: false, 
+        message: 'sku_data is required' 
+      });
+    }
+
+    // Validate required fields in sku_data
+    if (!sku_data.sku_code || sku_data.sku_code.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU code' });
     }
-    if (!sku_description || sku_description.trim() === '') {
+    if (!sku_data.sku_description || sku_data.sku_description.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU description' });
     }
 
-    // Include all fields in the data object
-    const data = {
-      sku_code,
-      sku_description,
-      cm_code,
-      cm_description,
-      sku_reference,
-      is_active,
-      created_by,
-      created_date,
-      period,
-      purchased_quantity,
-      sku_reference_check,
-      formulation_reference,
-      dual_source_sku
-    };
+    // Insert SKU detail
+    const insertedSku = await insertSkuDetail(sku_data);
+    
+    // Handle component data if provided
+    const componentResults = [];
+    if (components && Array.isArray(components) && components.length > 0) {
+      for (const component of components) {
+        try {
+          // Check if component_code already exists
+          const existingComponent = await getComponentDetailsByCode(component.component_code);
+          
+          if (existingComponent) {
+            // Update existing component by appending SKU code
+            const updatedComponent = await updateComponentSkuCode(
+              component.component_code, 
+              existingComponent.sku_code, 
+              sku_data.sku_code
+            );
+            componentResults.push({
+              component_code: component.component_code,
+              action: 'updated',
+              data: updatedComponent
+            });
+          } else {
+            // Insert new component
+            const componentData = {
+              ...component,
+              sku_code: sku_data.sku_code, // Set the current SKU code
+              created_by: sku_data.created_by || component.created_by,
+              created_date: sku_data.created_date || component.created_date || new Date(),
+              is_active: component.is_active !== undefined ? component.is_active : true
+            };
+            
+            const insertedComponent = await insertComponentDetail(componentData);
+            componentResults.push({
+              component_code: component.component_code,
+              action: 'inserted',
+              data: insertedComponent
+            });
+          }
+        } catch (componentError) {
+          componentResults.push({
+            component_code: component.component_code,
+            action: 'error',
+            error: componentError.message
+          });
+        }
+      }
+    }
 
-    const inserted = await insertSkuDetail(data);
-    reply.code(201).send({ success: true, data: inserted });
+    reply.code(201).send({ 
+      success: true, 
+      sku_data: insertedSku,
+      components_processed: componentResults.length,
+      component_results: componentResults
+    });
   } catch (error) {
     request.log.error(error);
     reply.code(500).send({ success: false, message: 'Failed to insert SKU detail', error: error.message });
