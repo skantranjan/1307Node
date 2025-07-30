@@ -1,4 +1,5 @@
-const { getSkuDetailsByCMCode, getAllSkuDetails, updateIsActiveStatus, getActiveYears, getAllSkuDescriptions, insertSkuDetail, updateSkuDetailBySkuCode } = require('../models/model.getSkuDetails');
+const { getSkuDetailsByCMCode, getAllSkuDetails, updateIsActiveStatus, getActiveYears, getAllSkuDescriptions, updateSkuDetailBySkuCode } = require('../models/model.getSkuDetails');
+const { insertSkuDetail } = require('../models/model.insertSkuDetail');
 const { getComponentDetailsByCode, insertComponentDetail, updateComponentSkuCode } = require('../models/model.componentOperations');
 
 /**
@@ -96,7 +97,7 @@ async function getAllSkuDescriptionsController(request, reply) {
 }
 
 /**
- * Controller to insert a new SKU detail with optional component data
+ * Controller to insert a new SKU detail
  */
 async function insertSkuDetailController(request, reply) {
   try {
@@ -104,6 +105,13 @@ async function insertSkuDetailController(request, reply) {
       sku_data,
       components // Array of component objects
     } = request.body;
+
+    // Log the incoming data from UI
+    console.log('=== SKU ADDITION REQUEST DATA ===');
+    console.log('Full Request Body:', JSON.stringify(request.body, null, 2));
+    console.log('SKU Data:', JSON.stringify(sku_data, null, 2));
+    console.log('Components Data:', JSON.stringify(components, null, 2));
+    console.log('=== END SKU ADDITION REQUEST DATA ===');
 
     // Validate required sku_data
     if (!sku_data) {
@@ -189,18 +197,8 @@ async function insertSkuDetailController(request, reply) {
 async function updateSkuDetailBySkuCodeController(request, reply) {
   try {
     const { sku_code } = request.params;
-    const {
-      sku_description,
-      period,
-      sku_reference,
-      is_active,
-      created_by,
-      created_date,
-      purchased_quantity,
-      sku_reference_check,
-      formulation_reference,
-      dual_source_sku
-    } = request.body;
+    const { sku_description } = request.body;
+    
     // Validation
     if (!sku_code || sku_code.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU code' });
@@ -208,25 +206,14 @@ async function updateSkuDetailBySkuCodeController(request, reply) {
     if (!sku_description || sku_description.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU description' });
     }
-    if (!period || period.trim() === '') {
-      return reply.code(400).send({ success: false, message: 'A value is required for period' });
-    }
-    const data = {
-      sku_description,
-      period,
-      sku_reference,
-      is_active,
-      created_by,
-      created_date,
-      purchased_quantity,
-      sku_reference_check,
-      formulation_reference,
-      dual_source_sku
-    };
+    
+    const data = { sku_description };
     const updated = await updateSkuDetailBySkuCode(sku_code, data);
+    
     if (!updated) {
       return reply.code(404).send({ success: false, message: 'SKU detail not found' });
     }
+    
     reply.code(200).send({ success: true, data: updated });
   } catch (error) {
     request.log.error(error);

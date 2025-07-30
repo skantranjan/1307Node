@@ -1,19 +1,17 @@
 const pool = require('../config/db.config');
 
 /**
- * Get SKU details filtered by CM code
- * @param {string} cmCode - The CM code to filter by
+ * Get SKU details by CM code
+ * @param {string} cmCode - The CM code to search for
  * @returns {Promise<Array>} Array of SKU details
  */
 async function getSkuDetailsByCMCode(cmCode) {
   const query = `
-    SELECT id, sku_code, sku_description, cm_code, cm_description, 
-           sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku
-    FROM public.sdp_skudetails 
-    WHERE cm_code = $1
-    ORDER BY sku_code;
+    SELECT id, sku_code, site, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku, skutype
+    FROM public.sdp_skudetails
+    WHERE cm_code = $1 AND is_active = true
+    ORDER BY id DESC;
   `;
-  
   const result = await pool.query(query, [cmCode]);
   return result.rows;
 }
@@ -24,12 +22,11 @@ async function getSkuDetailsByCMCode(cmCode) {
  */
 async function getAllSkuDetails() {
   const query = `
-    SELECT id, sku_code, sku_description, cm_code, cm_description, 
-           sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku
-    FROM public.sdp_skudetails 
-    ORDER BY cm_code, sku_code;
+    SELECT id, sku_code, site, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku, skutype
+    FROM public.sdp_skudetails
+    WHERE is_active = true
+    ORDER BY id DESC;
   `;
-  
   const result = await pool.query(query);
   return result.rows;
 }
@@ -120,30 +117,12 @@ async function insertSkuDetail(data) {
 async function updateSkuDetailBySkuCode(sku_code, data) {
   const query = `
     UPDATE public.sdp_skudetails SET
-      sku_description = $1,
-      period = $2,
-      sku_reference = $3,
-      is_active = $4,
-      created_by = $5,
-      created_date = $6,
-      purchased_quantity = $7,
-      sku_reference_check = $8,
-      formulation_reference = $9,
-      dual_source_sku = $10
-    WHERE sku_code = $11
-    RETURNING id, sku_code, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku;
+      sku_description = $1
+    WHERE sku_code = $2
+    RETURNING id, sku_code, sku_description, cm_code, cm_description, sku_reference, is_active, created_by, created_date, period, purchased_quantity, sku_reference_check, formulation_reference, dual_source_sku, site, skutype;
   `;
   const values = [
     data.sku_description,
-    data.period,
-    data.sku_reference || null,
-    typeof data.is_active === 'boolean' ? data.is_active : true,
-    data.created_by || null,
-    data.created_date || new Date(),
-    data.purchased_quantity || null,
-    data.sku_reference_check || null,
-    data.formulation_reference || null,
-    data.dual_source_sku || null,
     sku_code
   ];
   const result = await pool.query(query, values);
