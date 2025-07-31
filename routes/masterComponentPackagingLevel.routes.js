@@ -1,8 +1,15 @@
 const { getAllMasterComponentPackagingLevelController, getMasterComponentPackagingLevelByIdController } = require('../controllers/controller.masterComponentPackagingLevel');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function masterComponentPackagingLevelRoutes(fastify, options) {
-  fastify.get('/master-component-packaging-level', getAllMasterComponentPackagingLevelController);
-  fastify.get('/master-component-packaging-level/:id', getMasterComponentPackagingLevelByIdController);
+  // Protected routes - requires Bearer token
+  fastify.get('/master-component-packaging-level', {
+    preHandler: bearerTokenMiddleware
+  }, getAllMasterComponentPackagingLevelController);
+  
+  fastify.get('/master-component-packaging-level/:id', {
+    preHandler: bearerTokenMiddleware
+  }, getMasterComponentPackagingLevelByIdController);
 }
 
 module.exports = masterComponentPackagingLevelRoutes; 

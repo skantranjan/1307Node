@@ -1,4 +1,4 @@
-const { insertComponentDetail } = require('../models/model.addComponent');
+const { insertComponentDetail, checkDuplicateComponent } = require('../models/model.addComponent');
 const { insertMultipleEvidenceFiles } = require('../models/model.addEvidence');
 const { getPeriodById } = require('../models/model.getPeriods');
 const { uploadFilesToBlob } = require('../utils/azureBlobStorage');
@@ -11,7 +11,6 @@ async function addComponentController(request, reply) {
     console.log('🔍 ===== ADD COMPONENT API - DATA RECEIVED =====');
     console.log('Content-Type:', request.headers['content-type']);
     console.log('Request body keys:', Object.keys(request.body || {}));
-    console.log('Full request body:', JSON.stringify(request.body, null, 2));
     
     const componentData = {};
     const files = {
@@ -239,6 +238,11 @@ async function addComponentController(request, reply) {
 
     console.log('\n📊 === FINAL PROCESSED DATA ===');
     console.log('Component Data Keys:', Object.keys(componentData));
+    console.log('Component Type related fields:');
+    console.log('  - material_type_id:', componentData.material_type_id);
+    console.log('  - component_type:', componentData.component_type);
+    console.log('  - materialTypeId:', componentData.materialTypeId);
+    console.log('  - componentType:', componentData.componentType);
     console.log('Files by Category:');
     Object.keys(files).forEach(cat => {
       console.log(`  ${cat}: ${files[cat].length} files`);
@@ -262,10 +266,113 @@ async function addComponentController(request, reply) {
     }
 
     // Validate required fields
-    if (!componentData.cm_code || !componentData.year || !componentData.sku_code || !componentData.component_code) {
+    const validationErrors = [];
+    
+    // 1. Component Type validation (material_type_id)
+    // Check for multiple possible field names for Component Type
+    const componentTypeValue = componentData.material_type_id || componentData.component_type || componentData.materialTypeId || componentData.componentType;
+    
+    if (!componentTypeValue || componentTypeValue.toString().trim() === '') {
+      validationErrors.push({
+        field: 'material_type_id',
+        message: 'A value is required for Component Type'
+      });
+    } else {
+      // Update the componentData with the correct field name for database
+      componentData.material_type_id = componentTypeValue;
+    }
+    
+    // 2. Component Code validation
+    if (!componentData.component_code || componentData.component_code.trim() === '') {
+      validationErrors.push({
+        field: 'component_code',
+        message: 'A value is required for Component Code'
+      });
+    }
+    
+    // 3. Component Description validation
+    if (!componentData.component_description || componentData.component_description.trim() === '') {
+      validationErrors.push({
+        field: 'component_description',
+        message: 'A value is required for Component Description'
+      });
+    }
+    
+    // 4. Component validity date - From validation
+    if (!componentData.component_valid_from) {
+      validationErrors.push({
+        field: 'component_valid_from',
+        message: 'A value is required for Component validity date - From'
+      });
+    }
+    
+    // 5. Component validity date - To validation
+    if (!componentData.component_valid_to) {
+      validationErrors.push({
+        field: 'component_valid_to',
+        message: 'A value is required for Component validity date - To'
+      });
+    }
+    
+    // 6. Additional required fields validation
+    if (!componentData.cm_code) {
+      validationErrors.push({
+        field: 'cm_code',
+        message: 'A value is required for CM Code'
+      });
+    }
+    
+    if (!componentData.year) {
+      validationErrors.push({
+        field: 'year',
+        message: 'A value is required for Year'
+      });
+    }
+    
+    if (!componentData.sku_code) {
+      validationErrors.push({
+        field: 'sku_code',
+        message: 'A value is required for SKU Code'
+      });
+    }
+    
+    // Return validation errors if any
+    if (validationErrors.length > 0) {
       return reply.code(400).send({
         success: false,
-        message: 'Missing required fields: cm_code, year, sku_code, component_code'
+        message: 'Validation failed',
+        errors: validationErrors
+      });
+    }
+    
+    // 7. Duplicate record check
+    try {
+      const isDuplicate = await checkDuplicateComponent({
+        cm_code: componentData.cm_code,
+        sku_code: componentData.sku_code,
+        component_code: componentData.component_code,
+        component_valid_from: componentData.component_valid_from,
+        component_valid_to: componentData.component_valid_to
+      });
+      
+      if (isDuplicate) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Duplicate record check - duplicate records must not exist for the combination of 3PM Code, SKU Code, Component Code, Component Validity Date - From, and Component Validity Date - To',
+          errors: [
+            {
+              field: 'duplicate_record',
+              message: 'A record with the same CM Code, SKU Code, Component Code, Component Validity Date - From, and Component Validity Date - To already exists'
+            }
+          ]
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error checking for duplicate records:', error);
+      return reply.code(500).send({
+        success: false,
+        message: 'Error checking for duplicate records',
+        error: error.message
       });
     }
 

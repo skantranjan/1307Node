@@ -1,7 +1,11 @@
 const { getSkuDetailsByReferenceController } = require('../controllers/controller.getSkuReference');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function skuReferenceRoutes(fastify, options) {
-  fastify.get('/skureference/:sku_reference', getSkuDetailsByReferenceController);
+  // Protected route - requires Bearer token
+  fastify.get('/skureference/:sku_reference', {
+    preHandler: bearerTokenMiddleware
+  }, getSkuDetailsByReferenceController);
 }
 
 module.exports = skuReferenceRoutes; 

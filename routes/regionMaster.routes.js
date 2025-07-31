@@ -5,22 +5,35 @@ const {
   updateRegionController,
   deleteRegionController
 } = require('../controllers/controller.regionMaster');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function regionMasterRoutes(fastify, options) {
+  // Protected routes - requires Bearer token
+  
   // Get all regions
-  fastify.get('/regions', getAllRegionsController);
+  fastify.get('/regions', {
+    preHandler: bearerTokenMiddleware
+  }, getAllRegionsController);
   
   // Get region by ID
-  fastify.get('/regions/:id', getRegionByIdController);
+  fastify.get('/regions/:id', {
+    preHandler: bearerTokenMiddleware
+  }, getRegionByIdController);
   
   // Create new region
-  fastify.post('/regions', createRegionController);
+  fastify.post('/regions', {
+    preHandler: bearerTokenMiddleware
+  }, createRegionController);
   
   // Update region by ID
-  fastify.put('/regions/:id', updateRegionController);
+  fastify.put('/regions/:id', {
+    preHandler: bearerTokenMiddleware
+  }, updateRegionController);
   
   // Delete region by ID
-  fastify.delete('/regions/:id', deleteRegionController);
+  fastify.delete('/regions/:id', {
+    preHandler: bearerTokenMiddleware
+  }, deleteRegionController);
 }
 
 module.exports = regionMasterRoutes; 

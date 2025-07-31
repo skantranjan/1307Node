@@ -1,7 +1,11 @@
 const { getComponentCodeDataController } = require('../controllers/controller.getComponentCodeData');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function getComponentCodeDataRoutes(fastify, options) {
-  fastify.get('/get-component-code-data', getComponentCodeDataController);
+  // Protected route - requires Bearer token
+  fastify.get('/component-code-data', {
+    preHandler: bearerTokenMiddleware
+  }, getComponentCodeDataController);
 }
 
 module.exports = getComponentCodeDataRoutes; 

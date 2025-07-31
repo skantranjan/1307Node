@@ -1,11 +1,13 @@
 const { getComponentAuditLogByComponentIdHandler } = require('../controllers/controller.getComponentAuditLogByComponentId');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 /**
  * Routes for component audit log by component_id
  */
 async function routes(fastify, options) {
-  // GET component audit log by component_id
+  // GET component audit log by component_id - Protected route
   fastify.get('/component-audit-log/:componentId', {
+    preHandler: bearerTokenMiddleware,
     schema: {
       params: {
         type: 'object',

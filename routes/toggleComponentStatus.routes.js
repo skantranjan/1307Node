@@ -1,7 +1,11 @@
 const { toggleComponentStatusController } = require('../controllers/controller.toggleComponentStatus');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function toggleComponentStatusRoutes(fastify, options) {
-  fastify.patch('/component-status-change/:id', toggleComponentStatusController);
+  // Protected route - requires Bearer token
+  fastify.patch('/component-status-change/:id', {
+    preHandler: bearerTokenMiddleware
+  }, toggleComponentStatusController);
 }
 
 module.exports = toggleComponentStatusRoutes; 

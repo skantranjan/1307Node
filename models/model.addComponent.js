@@ -1,6 +1,34 @@
 const pool = require('../config/db.config');
 
 /**
+ * Check for duplicate component records
+ * @param {Object} data - The component data to check
+ * @returns {Promise<boolean>} True if duplicate exists, false otherwise
+ */
+async function checkDuplicateComponent(data) {
+  const query = `
+    SELECT id FROM sdp_component_details 
+    WHERE cm_code = $1 
+      AND sku_code = $2 
+      AND component_code = $3 
+      AND component_valid_from = $4 
+      AND component_valid_to = $5
+      AND is_active = true
+  `;
+  
+  const values = [
+    data.cm_code,
+    data.sku_code,
+    data.component_code,
+    data.component_valid_from,
+    data.component_valid_to
+  ];
+  
+  const result = await pool.query(query, values);
+  return result.rows.length > 0;
+}
+
+/**
  * Insert a new component detail record
  */
 async function insertComponentDetail(data) {
@@ -77,4 +105,7 @@ async function insertComponentDetail(data) {
   return result.rows[0];
 }
 
-module.exports = { insertComponentDetail }; 
+module.exports = { 
+  insertComponentDetail,
+  checkDuplicateComponent
+}; 

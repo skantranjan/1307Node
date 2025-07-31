@@ -1,7 +1,11 @@
 const { getComponentDetailsBySkuController } = require('../controllers/controller.getComponentDetailsBySku');
+const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function getComponentDetailsBySkuRoutes(fastify, options) {
-  fastify.get('/component-details/:sku_code', getComponentDetailsBySkuController);
+  // Protected route - requires Bearer token
+  fastify.get('/component-details-by-sku', {
+    preHandler: bearerTokenMiddleware
+  }, getComponentDetailsBySkuController);
 }
 
 module.exports = getComponentDetailsBySkuRoutes; 
