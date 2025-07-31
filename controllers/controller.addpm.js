@@ -114,12 +114,12 @@ async function addPmController(request, reply) {
            RETURNING id, username, email, role, is_active, created_at
          `;
          
-         const insertSrmValues = [
-           pmData.srm_name,
-           pmData.srm_email,
-           'srm',
-           true
-         ];
+                   const insertSrmValues = [
+            pmData.srm_name,
+            pmData.srm_email,
+            2,  // role: 2 for SRM
+            true
+          ];
          
          const insertSrmResult = await client.query(insertSrmQuery, insertSrmValues);
          srmUserId = insertSrmResult.rows[0].id;
@@ -187,12 +187,12 @@ async function addPmController(request, reply) {
             RETURNING id, username, email, role, is_active, created_at
           `;
           
-          const insertSpokeValues = [
-            spoke.name,
-            spoke.email,
-            'spoke',
-            true
-          ];
+                     const insertSpokeValues = [
+             spoke.name,
+             spoke.email,
+             3,  // role: 3 for SPOC
+             true
+           ];
           
           const insertSpokeResult = await client.query(insertSpokeQuery, insertSpokeValues);
           const spokeUserId = insertSpokeResult.rows[0].id;
