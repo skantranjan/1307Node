@@ -26,6 +26,7 @@ const getComponentDetailsByPeriodAndCmRoutes = require('./routes/getComponentDet
 const getComponentCodeDataRoutes = require('./routes/getComponentCodeData.routes');
 const regionMasterRoutes = require('./routes/regionMaster.routes');
 const skuReferenceRoutes = require('./routes/skuReference.routes');
+const addPmRoutes = require('./routes/addpm.routes');
 
 // Register multipart plugin for file uploads (MUST be registered before routes)
 fastify.register(fastifyMultipart, {
@@ -97,6 +98,9 @@ fastify.register(getComponentCodeDataRoutes);
 
 // Register Region Master routes
 fastify.register(regionMasterRoutes);
+
+// Register Add PM routes
+fastify.register(addPmRoutes);
 
 // Register SKU Reference routes
 fastify.register(skuReferenceRoutes);

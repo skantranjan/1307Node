@@ -1,4 +1,10 @@
 const pool = require('../config/db.config');
+const { 
+  getAllPmUsers, 
+  getPmUserById, 
+  updatePmUser, 
+  deletePmUser 
+} = require('../models/model.addpm');
 
 /**
  * Add PM User Controller
