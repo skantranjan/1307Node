@@ -210,25 +210,24 @@ async function addPmController(request, reply) {
           }
         }
         
-        // 4. Insert data into sdp_contractors table
-        console.log('📝 Inserting data into sdp_contractors table...');
+        // 4. Insert data into sdp_contractors table with blank/default values
+        console.log('📝 Inserting data into sdp_contractors table with blank values...');
         const insertContractorQuery = `
           INSERT INTO public.sdp_contractors (
             cm_code, cm_description, created_at, updated_at, company_name, 
-            signoff_by, signoff_date, signoff_status, document_url, periods, 
+            signoff_by, signoff_date, document_url, periods, 
             is_active, region_id, srm, signatory
-          ) VALUES ($1, $2, NOW(), NOW(), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          ) VALUES ($1, $2, NOW(), NOW(), $3, $4, $5, $6, $7, $8, $9, $10, $11)
           RETURNING id, cm_code, cm_description, created_at
         `;
         
         const insertContractorValues = [
           pmData.cm_code,                    // cm_code
           pmData.cm_description,             // cm_description
-          pmData.company_name || null,       // company_name (optional)
-          null,                              // signoff_by (null for now)
-          null,                              // signoff_date (null for now)
-          'pending',                         // signoff_status
-          null,                              // document_url (null for now)
+          null,                              // company_name (blank)
+          null,                              // signoff_by (blank)
+          null,                              // signoff_date (blank)
+          null,                              // document_url (blank)
           pmData.period,                     // periods
           true,                              // is_active
           pmData.region_id || 1,            // region_id (default to 1 if not provided)

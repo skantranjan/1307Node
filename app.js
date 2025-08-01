@@ -24,6 +24,7 @@ const getSignoffDetailsByCmRoutes = require('./routes/getSignoffDetailsByCm.rout
 const getSignoffDetailsByCmAndPeriodRoutes = require('./routes/getSignoffDetailsByCmAndPeriod.routes');
 const getComponentDetailsByPeriodAndCmRoutes = require('./routes/getComponentDetailsByPeriodAndCm.routes');
 const getComponentCodeDataRoutes = require('./routes/getComponentCodeData.routes');
+const getComponentBySkuReferenceRoutes = require('./routes/getComponentBySkuReference.routes');
 const regionMasterRoutes = require('./routes/regionMaster.routes');
 const skuReferenceRoutes = require('./routes/skuReference.routes');
 const addPmRoutes = require('./routes/addpm.routes');
@@ -95,6 +96,9 @@ fastify.register(getComponentDetailsByPeriodAndCmRoutes);
 
 // Register Get Component Code Data routes
 fastify.register(getComponentCodeDataRoutes);
+
+// Register Get Component By SKU Reference routes
+fastify.register(getComponentBySkuReferenceRoutes);
 
 // Register Region Master routes
 fastify.register(regionMasterRoutes);

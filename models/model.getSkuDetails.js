@@ -64,17 +64,17 @@ async function getActiveYears() {
 }
 
 /**
- * Get all sku_description values from sdp_skudetails
- * @returns {Promise<Array>} Array of sku_description strings
+ * Get all sku_description values with CM code and description from sdp_skudetails
+ * @returns {Promise<Array>} Array of objects with sku_description, cm_code, and cm_description
  */
 async function getAllSkuDescriptions() {
   const query = `
-    SELECT sku_description
+    SELECT sku_description, cm_code, cm_description
     FROM public.sdp_skudetails
     ORDER BY sku_description;
   `;
   const result = await pool.query(query);
-  return result.rows.map(row => row.sku_description);
+  return result.rows;
 }
 
 /**

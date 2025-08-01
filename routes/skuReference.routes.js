@@ -1,11 +1,15 @@
-const { getSkuDetailsByReferenceController } = require('../controllers/controller.getSkuReference');
+const { getSkuDetailsByReferenceController, getSkuDetailsByPeriodAndCmController } = require('../controllers/controller.getSkuReference');
 const bearerTokenMiddleware = require('../middleware/middleware.bearer');
 
 async function skuReferenceRoutes(fastify, options) {
-  // Protected route - requires Bearer token
-  fastify.get('/skureference/:sku_reference', {
+  // Protected routes - requires Bearer token
+  fastify.get('/sku-reference/:sku_reference', {
     preHandler: bearerTokenMiddleware
   }, getSkuDetailsByReferenceController);
+  
+  fastify.get('/getskureference/:period/:cm_code', {
+    preHandler: bearerTokenMiddleware
+  }, getSkuDetailsByPeriodAndCmController);
 }
 
 module.exports = skuReferenceRoutes; 

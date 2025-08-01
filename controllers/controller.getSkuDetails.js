@@ -84,12 +84,12 @@ async function getActiveYearsController(request, reply) {
 }
 
 /**
- * Controller to get all sku_description values
+ * Controller to get all sku_description values with CM code and description
  */
 async function getAllSkuDescriptionsController(request, reply) {
   try {
     const descriptions = await getAllSkuDescriptions();
-    reply.code(200).send({ success: true, count: descriptions.length, descriptions });
+    reply.code(200).send({ success: true, count: descriptions.length, data: descriptions });
   } catch (error) {
     request.log.error(error);
     reply.code(500).send({ success: false, message: 'Failed to fetch sku descriptions', error: error.message });
@@ -106,11 +106,15 @@ async function insertSkuDetailController(request, reply) {
       components // Array of component objects
     } = request.body;
 
+    // Get skutype from query parameter if provided
+    const skutype = request.query.skutype || 'Default';
+
     // Log the incoming data from UI
     console.log('=== SKU ADDITION REQUEST DATA ===');
     console.log('Full Request Body:', JSON.stringify(request.body, null, 2));
     console.log('SKU Data:', JSON.stringify(sku_data, null, 2));
     console.log('Components Data:', JSON.stringify(components, null, 2));
+    console.log('SKU Type from query:', skutype);
     console.log('=== END SKU ADDITION REQUEST DATA ===');
 
     // Validate required sku_data
@@ -128,6 +132,9 @@ async function insertSkuDetailController(request, reply) {
     if (!sku_data.sku_description || sku_data.sku_description.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU description' });
     }
+
+    // Add skutype to sku_data
+    sku_data.skutype = skutype;
 
     // Insert SKU detail
     const insertedSku = await insertSkuDetail(sku_data);
