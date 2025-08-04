@@ -202,29 +202,126 @@ async function insertSkuDetailController(request, reply) {
  * Controller to update a SKU detail by sku_code
  */
 async function updateSkuDetailBySkuCodeController(request, reply) {
+  console.log('🔥 UPDATE API CALLED!');
+  
   try {
     const { sku_code } = request.params;
-    const { sku_description } = request.body;
+    const { 
+      sku_description, 
+      sku_reference, 
+      skutype, 
+      site, 
+      formulation_reference,
+      components
+    } = request.body;
+    
+    // Console log the data received from UI
+    console.log('=== SKU UPDATE API - DATA FROM UI ===');
+    console.log('SKU Code:', sku_code);
+    console.log('Request Body:', JSON.stringify(request.body, null, 2));
+    console.log('Components:', components);
+    console.log('=== END SKU UPDATE API DATA ===');
     
     // Validation
     if (!sku_code || sku_code.trim() === '') {
       return reply.code(400).send({ success: false, message: 'A value is required for SKU code' });
     }
-    if (!sku_description || sku_description.trim() === '') {
-      return reply.code(400).send({ success: false, message: 'A value is required for SKU description' });
+    
+    // Check if at least one field is provided for update
+    const updateFields = { sku_description, sku_reference, skutype, site, formulation_reference };
+    const hasUpdateData = Object.values(updateFields).some(value => value !== undefined && value !== null);
+    
+    if (!hasUpdateData && (!components || components.length === 0)) {
+      return reply.code(400).send({ 
+        success: false, 
+        message: 'At least one field must be provided for update (sku_description, sku_reference, skutype, site, formulation_reference) or components array' 
+      });
     }
     
-    const data = { sku_description };
+    // Update SKU detail
+    const data = {};
+    if (sku_description !== undefined) data.sku_description = sku_description;
+    if (sku_reference !== undefined) data.sku_reference = sku_reference;
+    if (skutype !== undefined) data.skutype = skutype;
+    if (site !== undefined) data.site = site;
+    if (formulation_reference !== undefined) data.formulation_reference = formulation_reference;
+    
     const updated = await updateSkuDetailBySkuCode(sku_code, data);
     
     if (!updated) {
       return reply.code(404).send({ success: false, message: 'SKU detail not found' });
     }
     
-    reply.code(200).send({ success: true, data: updated });
+    // Handle component updates
+    let componentUpdateResults = null;
+    
+    if (components && Array.isArray(components) && components.length > 0) {
+      // Extract component_id from the component objects
+      const componentIds = components.map(comp => ({
+        component_id: comp.component_id || comp.id // Handle both component_id and id
+      }));
+      
+      console.log('Extracted Component IDs:', componentIds);
+      
+      // Step A: Remove SKU code from ALL components first
+      const removedFromAll = await removeSkuFromAllComponentDetails(sku_code);
+      
+      // Step B: Add SKU code to specified components
+      const addedToSpecific = await addSkuToSpecificComponents(sku_code, componentIds);
+      
+      componentUpdateResults = {
+        removed_from_all: removedFromAll,
+        added_to_specific: addedToSpecific
+      };
+    } else if (skutype === 'external') {
+      // Special handling for external SKUs (remove from all components)
+      componentUpdateResults = await removeSkuFromAllComponentDetails(sku_code);
+    }
+    
+    reply.code(200).send({ 
+      success: true, 
+      data: updated,
+      component_updates: componentUpdateResults
+    });
   } catch (error) {
     request.log.error(error);
     reply.code(500).send({ success: false, message: 'Failed to update SKU detail', error: error.message });
+  }
+}
+
+/**
+ * Remove SKU code from ALL component details (handles comma-separated values)
+ */
+async function removeSkuFromAllComponentDetails(skuCode) {
+  try {
+    const { removeSkuFromAllComponentDetails } = require('../models/model.getSkuDetails');
+    const results = await removeSkuFromAllComponentDetails(skuCode);
+    return {
+      message: `Removed SKU code '${skuCode}' from all component details`,
+      updated_components: results.length,
+      details: results
+    };
+  } catch (error) {
+    console.error('Error removing SKU from all component details:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add SKU code to specific components (handles comma-separated values)
+ */
+async function addSkuToSpecificComponents(skuCode, components) {
+  try {
+    const { addSkuToSpecificComponents } = require('../models/model.getSkuDetails');
+    const results = await addSkuToSpecificComponents(skuCode, components);
+    return {
+      message: `Added SKU code '${skuCode}' to specified components`,
+      updated_components: results.length,
+      details: results
+    };
+  } catch (error) {
+    console.error('Error adding SKU to specific components:', error);
+    throw error;
   }
 }
 
