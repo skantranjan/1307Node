@@ -1,6 +1,13 @@
 // Load environment variables
 require('dotenv').config();
-const fastify = require('fastify')({ logger: false });
+const fastify = require('fastify')({ 
+  logger: false,
+  http2: false,
+  trustProxy: true,
+  maxParamLength: 1000,
+  bodyLimit: 1048576, // 1MB
+  pluginTimeout: 10000
+});
 const skuRoutes = require('./routes/sku.routes');
 const cmRoutes = require('./routes/cm.routes');
 const skuDetailsRoutes = require('./routes/skuDetails.routes');
@@ -8,6 +15,8 @@ const jwtMiddleware = require('./middleware/middleware.jwt');
 const pool = require('./config/db.config');
 const fastifyCors = require('@fastify/cors');
 const fastifyMultipart = require('@fastify/multipart');
+const fastifySession = require('@fastify/session');
+const fastifyCookie = require('@fastify/cookie');
 const skuAuditLogRoutes = require('./routes/skuAuditLog.routes');
 const materialTypeMasterRoutes = require('./routes/materialTypeMaster.routes');
 const masterComponentUmoRoutes = require('./routes/masterComponentUmo.routes');
@@ -28,6 +37,9 @@ const getComponentBySkuReferenceRoutes = require('./routes/getComponentBySkuRefe
 const regionMasterRoutes = require('./routes/regionMaster.routes');
 const skuReferenceRoutes = require('./routes/skuReference.routes');
 const addPmRoutes = require('./routes/addpm.routes');
+const authRoutes = require('./routes/auth.routes');
+const protectedRoutes = require('./routes/protected.routes');
+const ssoRoutes = require('./routes/sso.routes');
 
 // Register multipart plugin for file uploads (MUST be registered before routes)
 fastify.register(fastifyMultipart, {
@@ -38,7 +50,57 @@ fastify.register(fastifyMultipart, {
   attachFieldsToBody: true
 });
 
+// Register cookie plugin
+fastify.register(fastifyCookie);
 
+// Register session plugin
+fastify.register(fastifySession, {
+  secret: process.env.SESSION_SECRET || 'your-super-secret-session-key-change-in-production',
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax',
+    path: '/'
+  },
+  saveUninitialized: false,
+  resave: false
+});
+
+// Register CORS with credentials support for Azure AD
+fastify.register(fastifyCors, {
+  origin: function (origin, cb) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return cb(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://localhost:3001',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+    
+    if (allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'Set-Cookie'],
+  exposedHeaders: ['Set-Cookie'],
+  maxAge: 86400
+});
+
+// Register authentication routes
+fastify.register(authRoutes);
+
+// Register protected routes
+fastify.register(protectedRoutes);
+
+// Register SSO routes
+fastify.register(ssoRoutes);
 
 // Register SKU routes
 fastify.register(skuRoutes);
@@ -130,6 +192,10 @@ fastify.get('/health', async (request, reply) => {
         account: process.env.AZURE_STORAGE_ACCOUNT || 'not-configured',
         container: process.env.AZURE_CONTAINER_NAME || 'not-configured'
       },
+      auth: {
+        enabled: true,
+        provider: 'Azure AD'
+      },
       server: {
         port: process.env.PORT || 3000,
         host: process.env.HOST || '0.0.0.0'
@@ -169,13 +235,9 @@ const start = async () => {
     await pool.query('SELECT NOW()');
     fastify.log.info('Database connected successfully');
     
-    fastify.register(fastifyCors, {
-      origin: ['http://localhost:5000'],
-      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
-    });
-    
     await fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' });
     fastify.log.info(`Server running on port ${process.env.PORT || 3000}`);
+    fastify.log.info('Azure AD SSO authentication enabled');
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
